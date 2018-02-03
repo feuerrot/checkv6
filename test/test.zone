@@ -1,0 +1,24 @@
+$ORIGIN	test.
+@		IN	SOA	ns.test.	none.test.	( 1 60 60 60 60 )
+
+; test.
+ns		IN	A	127.0.0.1
+		IN	AAAA	::1
+test.		IN	NS	ns
+
+; zone4.test.
+ns4.zone4	IN	A	127.0.0.1
+zone4		IN	NS	ns4.zone4
+
+; zone6.test.
+ns6.zone6	IN	AAAA	::1
+zone6		IN	NS	ns6.zone6
+
+; zone46.test.
+ns4.zone46	IN	A	127.0.0.1
+ns6.zone46	IN	AAAA	::1
+ns46.zone46	IN	A	127.0.0.1
+		IN	AAAA	::1
+zone46		IN	NS	ns46.zone46
+		IN	NS	ns4.zone46
+		IN	NS	ns6.zone46
