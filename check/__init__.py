@@ -10,6 +10,7 @@ class Check:
 		self.hostname = dns.name.from_text(hostname)
 		self.resolver = dns.resolver.Resolver()
 		#self.resolver.nameservers = ["::1", "127.0.0.1"]
+		self._check_cname()
 		self.result = {}
 	
 	def _debug(self, *args, level=None):
@@ -22,6 +23,38 @@ class Check:
 	def _query(self, record, hostname=None):
 		query = self.resolver.query(hostname or self.hostname, record)
 		return [answer for answer in query]
+
+	def _check_cname(self):
+		try:
+			query = self.resolver.query(
+				self.hostname,
+				dns.rdatatype.CNAME
+				)
+		except dns.resolver.NoAnswer:
+			return
+
+		# nopenopenope, we do not support more than one cname
+		self.hostname = query[0].target
+	
+	def _get_soa(self):
+		self.soa = None
+		query = self.resolver.query(
+			self.hostname,
+			dns.rdatatype.SOA,
+			raise_on_no_answer=False
+		)
+
+		try:
+			self.soa = query.rrset.name
+		except AttributeError:
+			pass
+		try:
+			self.soa = query.response.authority[0].name
+		except IndexError:
+			pass
+
+		if self.soa == None:
+			raise Exception
 	
 	def _get_first_record(self, record, hostname):
 		self._get_soa()
@@ -34,32 +67,24 @@ class Check:
 			except dns.resolver.NoAnswer:
 				hostname = hostname.parent()
 
-		return None
+		raise dns.resolver.NoAnswer
 	
 	def _aaaa(self, hostname=None):
-		return self._query(dns.rdatatype.AAAA, hostname)
+		try:
+			return self._query(dns.rdatatype.AAAA, hostname)
+		except dns.resolver.NoAnswer:
+			return []
 	
 	def _ns(self):
 		query = self._get_first_record(dns.rdatatype.NS, self.hostname)
-		return [answer.target for answer in query]
+		return [elem for answer in query for elem in self._aaaa(answer.target)]
 	
 	def _mx(self):
-		query = self._get_first_record(dns.rdatatype.MX, self.hostname)
-		return [answer.exchange for answer in query]
-
-	def _get_soa(self):
-		query = self.resolver.query(
-			self.hostname,
-			dns.rdatatype.SOA,
-			raise_on_no_answer=False
-		)
-		self.soa = query.response.authority[0].name
-	
-	def _http(self):
-		pass
-	
-	def _https(self):
-		pass
+		try:
+			query = self._get_first_record(dns.rdatatype.MX, self.hostname)
+		except dns.resolver.NoAnswer:
+			return None
+		return [elem for answer in query for elem in self._aaaa(answer.exchange)]
 	
 	def check(self):
 		self.result["ns"] = self._ns()
@@ -69,4 +94,10 @@ class Check:
 	
 if __name__ == "__main__":
 	c = Check("www.chaosdorf.de")
+	print(c.check())
+	c = Check("www.ccc.de")
+	print(c.check())
+	c = Check("www.duesseldorf.ccc.de")
+	print(c.check())
+	c = Check("check.ipv6only.network")
 	print(c.check())
