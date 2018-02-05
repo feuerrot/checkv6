@@ -7,8 +7,8 @@ class Check:
 	def __init__(self, hostname):
 		self.hostname = dns.name.from_text(hostname)
 		self.resolver = dns.resolver.Resolver()
-		self._check_cname()
 		self.result = {}
+		self._check_cname()
 
 	def _query(self, record, hostname=None):
 		query = self.resolver.query(hostname or self.hostname, record)
@@ -21,13 +21,15 @@ class Check:
 				dns.rdatatype.CNAME
 				)
 		except dns.resolver.NoAnswer:
+			self.result["cname"] = False
 			return
 
 		# nopenopenope, we do not support more than one cname
+		self.result["cname"] = True
 		self.hostname = query[0].target
 	
 	def _get_soa(self):
-		self.soa = None
+		self.result["soa"] = None
 		query = self.resolver.query(
 			self.hostname,
 			dns.rdatatype.SOA,
@@ -35,22 +37,22 @@ class Check:
 		)
 
 		try:
-			self.soa = query.rrset.name
+			self.result["soa"] = query.rrset.name
 		except AttributeError:
 			pass
 		try:
-			self.soa = query.response.authority[0].name
+			self.result["soa"] = query.response.authority[0].name
 		except IndexError:
 			pass
 
-		if self.soa == None:
+		if self.result["soa"] == None:
 			raise Exception
 	
 	def _get_first_record(self, record, hostname):
 		self._get_soa()
-		assert(self.soa.is_superdomain(hostname))
+		assert(self.result["soa"].is_superdomain(hostname))
 
-		while self.soa.is_superdomain(hostname):
+		while self.result["soa"].is_superdomain(hostname):
 			try:
 				result = self._query(record, hostname)
 				return result
@@ -73,7 +75,7 @@ class Check:
 		try:
 			query = self._get_first_record(dns.rdatatype.MX, self.hostname)
 		except dns.resolver.NoAnswer:
-			return None
+			return []
 		return [elem for answer in query for elem in self._aaaa(answer.exchange)]
 	
 	def check(self):
