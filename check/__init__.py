@@ -4,21 +4,11 @@ import dns.name
 import requests
 
 class Check:
-	debug = True
-	
 	def __init__(self, hostname):
 		self.hostname = dns.name.from_text(hostname)
 		self.resolver = dns.resolver.Resolver()
-		#self.resolver.nameservers = ["::1", "127.0.0.1"]
 		self._check_cname()
 		self.result = {}
-	
-	def _debug(self, *args, level=None):
-		if self.debug:
-			print(
-				"[{}]".format(level or "x"),
-				" ".join([str(arg) for arg in args])
-			)
 
 	def _query(self, record, hostname=None):
 		query = self.resolver.query(hostname or self.hostname, record)
