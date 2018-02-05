@@ -3,7 +3,7 @@ $ORIGIN	zone6.test.
 
 ; NS
 ns6		IN	AAAA	::1
-zone6.test.	IN	NS	ns6
+@		IN	NS	ns6
 
 ; A/AAAA
 www4		IN	A	127.0.0.1
@@ -17,6 +17,6 @@ mx6		IN	AAAA	::1
 mx46		IN	A	127.0.0.1
 		IN	AAAA	::1
 
-		IN	MX	10	mx4
-		IN	MX	20	mx6
-		IN	MX	30	mx46
+@		IN	MX	10	mx4
+@		IN	MX	20	mx6
+@		IN	MX	30	mx46

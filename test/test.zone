@@ -4,7 +4,7 @@ $ORIGIN	test.
 ; test.
 ns		IN	A	127.0.0.1
 		IN	AAAA	::1
-test.		IN	NS	ns
+@		IN	NS	ns
 
 ; zone4.test.
 ns4.zone4	IN	A	127.0.0.1
